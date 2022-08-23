@@ -1,0 +1,33 @@
+library(readr)
+library(dplyr)
+
+#Import Data
+shots <- read.csv("shots_data.csv")
+
+#Compute distance from hoop for each shot and label shots appropriately
+shots <- shots %>% mutate(
+            x=abs(x),
+            y=abs(y),
+            distance = sqrt(x^2 + y^2),
+            shot_type = case_when(
+                          y < 7.8 & distance > 22 ~ "C3",
+                          y > 7.8 & distance > 23.75 ~ "NC3",
+                          TRUE ~ "2PT"))
+
+#Compute eFG%
+shots %>%
+  group_by(team, shot_type) %>%
+  summarize(n = n(), made = sum(fgmade)) %>%
+  mutate(threes = case_when(shot_type == "C3" ~ as.numeric(made),
+                            shot_type == "NC3" ~ as.numeric(made),
+                            TRUE ~ 0),
+         eFG = (made + (0.5*threes))/n)
+                                                                                                        
+
+
+#Team Shot Distribution
+shots %>% 
+  group_by(team, shot_type) %>%
+  summarize(n=n()) %>%
+  mutate(attempts = sum(n),
+         shot_distribution = format(round(n / sum(n), 3), nsmall=3))       
